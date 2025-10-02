@@ -1257,7 +1257,7 @@ router.delete("/:studentId", authenticateToken, checkRoleStudent, (req: CustomRe
 });
 
 export default router; // ส่ง router ไปเมาท์ใน index.ts
-
+```
 
 
 

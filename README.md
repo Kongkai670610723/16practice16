@@ -722,8 +722,6 @@ router.post("/logout", authenticateToken, (req: Request, res: Response) => {
 
 
 
-
-
 // =============================================================
 // FILE: src/index.ts  — จุดเริ่มต้นของแอป (Lab16 โครงรวม)
 // =============================================================
@@ -1297,6 +1295,7 @@ export default router; // ส่ง router ไปเมาท์ใน index.ts
 
 
 
+
 โอเค เข้าใจเลยครับ 👍
 คุณสอบแบบ **open-book + ใช้ Google ได้** แต่ **ห้ามใช้ AI**
 สิ่งสำคัญคือ “ต้องรู้ว่าเราจะหาคำตอบอะไรจาก Google” ให้เร็วและตรงกับสิ่งที่ข้อสอบออก
@@ -1618,4 +1617,1261 @@ export default router; // ส่ง router ไปเมาท์ใน index.ts
 ---
 
 อยากให้ผมทำ  (Lab15: Student/Course API, Lab16: Users/Enrollments/JWT) ให้เป็น 2 ตารางย่อยด้วยไหมครับ จะได้เปิดดูได้แม่นยำยิ่งขึ้น?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+สุดยอดที่รวบรวมทุกอย่างมาให้ครบขนาดนี้ 👍 ต่อไปนี้คือ “คอร์สสอน API แบบเร่งด่วนก่อนสอบ” ที่ออกแบบตรงกับ Lab15 + Lab16 ของ CPE207 โดยผมจะพาคุณทำตั้งแต่ 0 → พร้อมยิง Insomnia และผมจะให้ “โค้ดเทมเพลตที่คอมเมนต์ทุกบรรทัด” ด้วย (คอมเมนต์สั้น กระชับ อ่านเร็วก่อนสอบ)
+
+หมายเหตุ: โครงสร้างและเงื่อนไขจะยึดตามเอกสารแลบของอาจารย์ (Lab-15: Student/Course CRUD, Lab-16: Enrollments + JWT + RBAC) คุณสามารถเทียบข้อกำหนดกับไฟล์ PDF ที่อัปโหลดไว้ได้
+
+---
+
+# แผนเรียน 5 ตอน (อ่านตามลำดับ)
+
+1. พื้นฐาน RESTful API + โครง Express + เครื่องมือ
+2. Lab15: Student/Course API (ครบ CRUD + Validation)
+3. Lab16: Users/Login (JWT) + Middlewares + Enrollments (RBAC)
+4. วิธีเทสด้วย Insomnia: step-by-step (admin vs student)
+5. เช็กลิสต์ก่อนสอบ + กับดักพบบ่อย (แก้ยังไง)
+
+---
+
+# 1) พื้นฐาน RESTful API + โครง Express + เครื่องมือ
+
+**RESTful API คืออะไร (สรุปสั้นก่อนสอบ)**
+
+* ใช้ HTTP verbs: `GET` (อ่าน), `POST` (สร้าง), `PUT` (แก้ทั้งหมด/บางส่วน), `DELETE` (ลบ)
+* รับพารามิเตอร์ 3 แบบ:
+
+  * Path params: `/students/:studentId`
+  * Query: `/students?program=CPE`
+  * Body (JSON): ใน `POST`, `PUT`, `DELETE` (เช่น `{ "courseId": 261207 }`)
+* สถานะสำคัญ: `200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`, `500 Internal Server Error`
+
+**ตั้งโปรเจ็กต์ Express + TypeScript (ใช้ pnpm)**
+
+```bash
+mkdir api-bootcamp && cd api-bootcamp
+pnpm init -y
+pnpm add express zod morgan jsonwebtoken dotenv
+pnpm add -D typescript @types/node @types/express @types/jsonwebtoken tsx nodemon
+npx tsc --init
+```
+
+**`tsconfig.json` (คอนฟิกพื้นฐานสำหรับ ESM + TS)**
+
+```json
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "strict": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
+}
+```
+
+**`package.json` (สคริปต์ที่ใช้จริง)**
+
+```json
+{
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --exec tsx src/index.ts",
+    "build": "tsc",
+    "serve": "node dist/index.js"
+  }
+}
+```
+
+**.env**
+
+```
+PORT=3000
+JWT_SECRET=this_is_my_jwt_secret
+```
+
+---
+
+# 2) Lab15 — Student/Course API (ครบ CRUD + Validation)
+
+> โจทย์บังคับให้มี API versioning (`/api/v2/...`) และต้องมี CRUD ของ Course + endpoint รายวิชา/รายนักศึกษา, พร้อม status code/ข้อความตามสเปก
+
+## 2.1 โครง Types + DB (in-memory) + Validators
+
+**`src/libs/types.ts`** (อิงสไตล์งานคุณ – คอร์สเป็นเลข 6 หลักแบบ number ก็ได้ แต่ให้ “สอดคล้องกันทั้งโปรเจ็กต์”)
+
+```ts
+// อธิบาย: ไฟล์รวม type ที่ทั้งโปรเจ็กต์จะ import ไปใช้ซ้ำ
+
+// ประเภทข้อมูลนักศึกษา
+export interface Student {                 // ชื่อ interface = Student
+  studentId: string;                      // รหัส นศ. 9 หลัก => ใช้ string เพื่อไม่หลุด 0 หน้า
+  firstName: string;                      // ชื่อ
+  lastName: string;                       // นามสกุล
+  program: "CPE" | "ISNE";                // สาขาแบบ enum แคบ เพื่อกันพิมพ์ผิด
+  courses?: number[];                     // รายวิชาที่ลง (เลข 6 หลัก) (ไม่บังคับมี)
+}
+
+// ประเภทข้อมูลวิชา
+export interface Course {
+  courseId: number;                       // รหัสวิชา 6 หลัก (number)
+  courseTitle: string;                    // ชื่อวิชา
+  instructors: string[];                  // รายชื่อผู้สอน (อย่างน้อย 1 คน)
+}
+```
+
+**ข้อควรระวัง**: ในงานคุณมีบางจุดใช้ `courses?: string[]` (Lab16) และบางจุดใช้ number (Lab15) — ในโปรเจ็กต์เดียวกันเลือกแบบเดียวให้ทั้งระบบ (ผมตั้งให้ Lab15 = number, Lab16 = string ก็ได้ แต่ต้อง cast/แยกโฟลเดอร์ หรือ “เลือกอย่างใดอย่างหนึ่ง” จะง่ายสุดตอนสอบ)
+
+**`src/db/db.ts`** (in-memory DB สำหรับ Lab15)
+
+```ts
+// อธิบาย: ใช้ array ในหน่วยความจำแทน DB จริง ๆ เพื่อให้ทดลองง่าย
+
+import { type Student, type Course } from "../libs/types.js";  // import type ใช้ร่วมกัน
+
+export let students: Student[] = [                             // สร้าง students array
+  { studentId: "650610001", firstName: "Matt",   lastName: "Damon",  program: "CPE" },
+  { studentId: "650610002", firstName: "Cillian",lastName: "Murphy", program: "CPE",  courses: [261207, 261497] },
+  { studentId: "650610003", firstName: "Emily",  lastName: "Blunt",  program: "ISNE", courses: [269101, 261497] }
+];
+
+export let courses: Course[] = [                               // สร้าง courses array
+  { courseId: 261207, courseTitle: "Basic Computer Engineering Lab", instructors: ["Dome","Chanadda"] },
+  { courseId: 261497, courseTitle: "Full Stack Development",         instructors: ["Dome","Nirand","Chanadda"] },
+  { courseId: 269101, courseTitle: "Introduction to ISNE",           instructors: ["KENNETH COSH"] }
+];
+```
+
+**`src/schemas/courseValidator.ts`** (Zod สำหรับตรวจ input — สำคัญมาก, ข้อสอบชอบวัด 400/404/409)
+
+```ts
+import { z } from "zod";                                  // import zod
+
+export const zCourseId = z                                // สร้างตัวตรวจ courseId
+  .number()                                               // ต้องเป็น number
+  .int()                                                  // ต้องเป็นจำนวนเต็ม
+  .refine(v => v >= 100000 && v <= 999999, {              // ต้องมี 6 หลัก
+    message: "Number must be exactly 6 digits"
+  });
+
+const zCourseTitle = z.string().min(1);                   // ห้ามว่าง
+const zInstructors = z.array(z.string()).min(1);          // ต้องมีอย่างน้อย 1 คน
+
+export const zCoursePostBody = z.object({                 // Body สำหรับ POST
+  courseId: zCourseId,
+  courseTitle: zCourseTitle,
+  instructors: zInstructors,
+});
+
+export const zCoursePutBody = z.object({                  // Body สำหรับ PUT
+  courseId: zCourseId,                                    // อ้างอิงตัวที่จะแก้ด้วย courseId
+  courseTitle: zCourseTitle.nullish(),                    // ช่องอื่น ๆ แก้ได้เป็นบางส่วน
+  instructors: zInstructors.nullish(),
+});
+
+export const zCourseDeleteBody = z.object({               // Body สำหรับ DELETE
+  courseId: zCourseId
+});
+```
+
+**`src/schemas/studentValidator.ts`**
+
+```ts
+import { z } from "zod";                                  // import zod
+
+export const zStudentId = z.string().length(9, {          // รหัส นศ. ต้อง 9 ตัว
+  message: "Student Id must contain 9 characters"
+});
+const zFirstName = z.string().min(3, { message: "First name requires at least 3 charaters" });
+const zLastName  = z.string().min(3, { message: "Last name requires at least 3 characters" });
+const zProgram   = z.enum(["CPE","ISNE"], { message: "Program must be either CPE or ISNE" });
+const zCourses   = z.array(z.number().int()).min(0);      // รายวิชาเป็นเลขจำนวนเต็ม
+
+export const zStudentPostBody = z.object({                 // Body สำหรับ POST student
+  studentId: zStudentId,
+  firstName: zFirstName,
+  lastName: zLastName,
+  program: zProgram,
+  courses: zCourses.nullish(),                             // *** ใช้ชื่อ "courses" ให้ตรงกับ type ***
+});
+
+export const zStudentPutBody = z.object({                  // Body สำหรับ PUT student
+  studentId: zStudentId,                                   // ระบุตัวที่จะอัปเดต
+  firstName: zFirstName.nullish(),
+  lastName: zLastName.nullish(),
+  program: zProgram.nullish(),
+});
+
+export const zStudentDeleteBody = z.object({               // Body สำหรับ DELETE student (ถ้ามี)
+  studentId: zStudentId
+});
+```
+
+> ทำไมต้องเน้นชื่อฟิลด์ `courses` ให้ตรงกับ type?
+> เพราะในโค้ดของคุณ (lab15) มีจุดหนึ่งใช้ `course` (ไม่มี s) → เวลา parse/validate/merge จะงงและอัปเดตไม่เข้า ให้แก้ให้ตรงกันทั้งโปรเจ็กต์
+
+## 2.2 Routes — Student & Course (ตามสเปก Lab15)
+
+**`src/routes/studentRoutes.ts`** (มี `/me` กับตัวอย่างอ่านข้อมูล)
+
+```ts
+import { Router, type Request, type Response } from "express";  // import express types
+const router = Router();                                        // สร้าง Router
+
+// GET /me — ส่งข้อมูลตัวเอง (คะแนนข้อ 1)
+router.get("/me", (req: Request, res: Response) => {            // สร้าง endpoint /me
+  return res.status(200).json({                                 // ตอบกลับ status 200
+    success: true,                                              // ธงความสำเร็จ
+    message: "Student Information",                             // ข้อความ
+    data: {                                                     // ข้อมูลตนเอง (ฮาร์ดโค้ดตามสั่ง)
+      studentId: "670610723",
+      firstName: "Phurin",
+      lastName: "Inthajak",
+      program: "CPE",
+      section: "001",
+    },
+  });
+});
+
+export default router;                                          // ส่ง router ออกไปใช้ใน index
+```
+
+**`src/routes/courseRoutes.ts`** (ครบ GET by id + CRUD + `/students/:id/courses`)
+
+> จุดสำคัญ: path ให้ตรงสเปก เช่น `/api/v2/courses/:courseId`, ส่ง status/ข้อความตามกรณี
+
+```ts
+import { Router, type Request, type Response } from "express";  // import express types
+import { students, courses } from "../db/db.js";                // import in-memory DB
+import { zStudentId } from "../schemas/studentValidator.js";    // import zod validators
+import { 
+  zCourseId, zCoursePostBody, zCoursePutBody, zCourseDeleteBody
+} from "../schemas/courseValidator.js";
+import type { Course } from "../libs/types.js";                 // import type สำหรับ body/response
+
+const router = Router();                                        // สร้าง Router
+
+// GET /api/v2/students/:studentId/courses  (คะแนนข้อ 2 + 2.1)
+router.get("/students/:studentId/courses", (req: Request, res: Response) => {
+  try {
+    const studentId = req.params.studentId;                     // ดึงพารามิเตอร์จาก path
+    const result = zStudentId.safeParse(studentId);             // ตรวจรูปแบบด้วย zod
+    if (!result.success) {                                      // ถ้ารูปแบบไม่ผ่าน
+      return res.status(400).json({                             // ส่ง 400
+        message: "Validation failed",
+        errors: result.error.issues[0]?.message,                // ข้อความ error จาก zod
+      });
+    }
+
+    const idx = students.findIndex(s => s.studentId === studentId); // หา index ของ นศ.
+    if (idx === -1) {                                           // ไม่พบ
+      return res.status(404).json({                             // ส่ง 404
+        success: false,
+        message: "Student does not exists",
+      });
+    }
+
+    const courseSummaries = (students[idx].courses ?? [])       // แม็พ courses ของ นศ.
+      .map(cid => {
+        const c = courses.find(cc => cc.courseId === cid);      // จับคู่รายละเอียดวิชา
+        return c ? { courseId: c.courseId, courseTitle: c.courseTitle } : null;
+      })
+      .filter(Boolean);                                         // ตัด null ออก
+
+    res.set("Link", `/students/${studentId}/courses`);          // ใส่ Header อ้างอิง
+    return res.status(200).json({                               // ตอบกลับ 200 พร้อมข้อมูล
+      success: true,
+      message: `Get courses detail of student ${studentId}`,
+      data: { studentId, courses: courseSummaries },
+    });
+  } catch (err) {                                               // จัดการข้อผิดพลาดไม่คาดคิด
+    return res.status(500).json({
+      success: false,
+      message: "Something is wrong, please try again",
+      error: err,
+    });
+  }
+});
+
+// GET /api/v2/courses/:courseId  (คะแนนข้อ 3 + 3.1/3.2)
+router.get("/courses/:courseId", (req: Request, res: Response) => {
+  try {
+    const raw = Number(req.params.courseId);                    // รับค่าจาก path แล้วแปลงเป็น number
+    const ok = zCourseId.safeParse(raw);                        // ตรวจ 6 หลัก
+    if (!ok.success) {                                          // ถ้าไม่ผ่าน
+      return res.status(400).json({                             // 400
+        message: "Validation failed",
+        errors: ok.error.issues[0]?.message,
+      });
+    }
+
+    const i = courses.findIndex(c => c.courseId === raw);       // หาใน DB
+    if (i === -1) {                                             // ไม่เจอ
+      return res.status(404).json({                             // 404
+        success: false,
+        message: "Course does not exists",
+      });
+    }
+
+    res.set("Link", `/courses/${raw}`);                         // อ้างอิง
+    return res.status(200).json({                               // ตอบกลับข้อมูล
+      success: true,
+      message: `Get course ${raw} successfully`,
+      data: courses[i],
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Something is wrong, please try again",
+      error: err,
+    });
+  }
+});
+
+// POST /api/v2/courses  (คะแนนข้อ 4 + 4.1/4.2)
+router.post("/courses", (req: Request, res: Response) => {
+  try {
+    const body = req.body as Course;                            // แคสต์ body เป็น Course
+    const ok = zCoursePostBody.safeParse(body);                 // ตรวจรูปแบบ
+    if (!ok.success) {                                          // ถ้าไม่ผ่าน
+      return res.status(400).json({                             // 400
+        message: "Validation failed",
+        errors: ok.error.issues[0]?.message,
+      });
+    }
+
+    const exists = courses.find(c => c.courseId === body.courseId); // ตรวจซ้ำ
+    if (exists) {                                               // ถ้ามีแล้ว
+      return res.status(409).json({                             // 409 Conflict
+        success: false,
+        message: "Course Id is already exists",
+      });
+    }
+
+    courses.push(body);                                         // เพิ่มเข้า array
+    res.set("Link", `/courses/${body.courseId}`);               // อ้างอิง
+    return res.status(201).json({                               // 201 Created
+      success: true,
+      message: `Course ${body.courseId} has been added successfully`,
+      data: body,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Something is wrong, please try again",
+      error: err,
+    });
+  }
+});
+
+// PUT /api/v2/courses  (คะแนนข้อ 5 + 5.1/5.2)
+router.put("/courses", (req: Request, res: Response) => {
+  try {
+    const body = req.body as Course;                            // รับ body
+    const ok = zCoursePutBody.safeParse(body);                  // ตรวจรูปแบบสำหรับ update
+    if (!ok.success) {                                          // ไม่ผ่าน
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: ok.error.issues[0]?.message,
+      });
+    }
+
+    const idx = courses.findIndex(c => c.courseId === body.courseId); // หาตัวที่จะอัปเดต
+    if (idx === -1) {                                           // ไม่เจอ
+      return res.status(404).json({
+        success: false,
+        message: "Course Id does not exists",
+      });
+    }
+
+    courses[idx] = { ...courses[idx], ...body };                // อัปเดตแบบ merge
+    res.set("Link", `/courses/${body.courseId}`);               // อ้างอิง
+    return res.status(200).json({
+      success: true,
+      message: `Course ${body.courseId} has been updated successfully`,
+      data: courses[idx],
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Something is wrong, please try again",
+      error: err,
+    });
+  }
+});
+
+// DELETE /api/v2/courses  (คะแนนข้อ 6 + 6.1/6.2)
+router.delete("/courses", (req: Request, res: Response) => {
+  try {
+    const body = req.body as { courseId: number };              // รับ body มีแค่ courseId
+    const ok = zCourseDeleteBody.safeParse(body);               // ตรวจรูปแบบ
+    if (!ok.success) {                                          // ไม่ผ่าน
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        error: ok.error.issues[0]?.message,
+      });
+    }
+
+    const idx = courses.findIndex(c => c.courseId === body.courseId); // หาเป้าหมาย
+    if (idx === -1) {                                           // ไม่เจอ
+      return res.status(404).json({
+        success: false,
+        message: "Course Id does not exists",
+      });
+    }
+
+    const removed = courses[idx];                               // เก็บสำเนา
+    courses.splice(idx, 1);                                     // ลบ
+
+    return res.status(200).json({                               // หรือใช้ 204 No Content ก็ได้
+      success: true,
+      message: `Course ${removed.courseId} has been deleted successfully`,
+      data: removed,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Something is wrong, please try again",
+      error: err,
+    });
+  }
+});
+
+export default router;                                          // ส่ง router ออก
+```
+
+**`src/index.ts`** (ประกอบทุกอย่างเข้าด้วยกัน)
+
+```ts
+import express, { type Request, type Response } from "express"; // import express + types
+import morgan from "morgan";                                     // logger
+
+import studentRoutes from "./routes/studentRoutes.js";           // routes: /me
+import courseRoutes from "./routes/courseRoutes.js";             // routes: course + student/courses
+
+const app = express();                                           // สร้าง app instance
+
+app.use(express.json());                                         // body parser JSON
+app.use(morgan("dev"));                                          // logger (method url status ms)
+
+app.get("/", (req: Request, res: Response) => {                  // GET /
+  return res.status(200).json({                                  // ส่ง alive message
+    success: true,
+    message: "Lab 15 API service successfully",
+  });
+});
+
+app.use("/api/v2", courseRoutes);                                // เมาท์ /api/v2/* -> courseRoutes
+app.use("/", studentRoutes);                                     // เมาท์ /me -> studentRoutes
+
+app.listen(3000, () =>                                           // เปิดพอร์ต 3000
+  console.log("🚀 Server running on http://localhost:3000")
+);
+
+export default app;                                              // สำหรับ deploy ที่ต้อง import app
+```
+
+---
+
+# 3) Lab16 — Users/Login (JWT) + Middlewares + Enrollments (RBAC)
+
+> โจทย์บังคับ:
+>
+> * `POST /api/v2/users/login` สร้าง JWT
+> * RBAC: ADMIN เท่านั้นถึงจะดู enrollments ทั้งหมด + reset
+> * ADMIN หรือ STUDENT เจ้าของข้อมูลถึงจะดูผลลงทะเบียนของ studentId นั้นได้
+> * STUDENT เจ้าของเท่านั้นถึง add/drop ได้
+>   (สรุป endpoint ตรงกับที่คุณทำไว้แล้ว)
+
+## 3.1 Types + DB + Reset
+
+**`src/libs/types.ts` (ส่วนที่เพิ่มเพื่อ Lab16)**
+
+```ts
+export interface Enrollment {                  // ความสัมพันธ์ (studentId, courseId)
+  studentId: string;
+  courseId: string;                            // *** Lab16 ผมใช้ string 6 หลัก เพื่อ match ตัวอย่าง
+}
+
+export interface User {                         // ผู้ใช้สำหรับ login
+  username: string;
+  password: string;                             // demo เท่านั้น (จริงต้อง hash)
+  studentId?: string | null;                    // นักศึกษามีรหัส, admin เป็น null
+  role: "STUDENT" | "ADMIN";
+  tokens?: string[];                            // เก็บ JWT ที่ออกให้
+}
+
+// payload ที่จะเก็บไว้ใน token
+export interface UserPayload {
+  username: string;
+  studentId?: string | null;
+  role: "STUDENT" | "ADMIN";
+}
+
+// request แบบ custom (ให้ middleware ใส่ user, token เข้าไป)
+import { type Request } from "express";
+export interface CustomRequest extends Request {
+  user?: UserPayload;
+  token?: string;
+}
+```
+
+**`src/db/db.ts`** (ฉบับ Lab16 – โปรดเลือก “type เดียวกันทั้งระบบ” ให้ชัด; ตัวอย่างนี้ผมใช้ string 6 หลัก)
+
+```ts
+import { type Student, type Course, type Enrollment, type User } from "../libs/types.js";
+
+export let students: Student[] = [
+  { studentId: "650610001", firstName: "Matt",   lastName: "Damon",  program: "CPE" },
+  { studentId: "650610002", firstName: "Cillian",lastName: "Murphy", program: "CPE",  courses: ["261207","261497"] as any }, // ถ้าจะใช้ string ทั้งระบบ ปรับ type Student ให้ courses?: string[]
+  { studentId: "650610003", firstName: "Emily",  lastName: "Blunt",  program: "ISNE", courses: ["269101","261497"] as any }
+];
+
+export let courses: Course[] = [
+  { courseId: "261207" as any, courseTitle: "Basic Computer Engineering Lab", instructors: ["Dome","Chanadda"] },
+  { courseId: "261497" as any, courseTitle: "Full Stack Development",         instructors: ["Dome","Nirand","Chanadda"] },
+  { courseId: "269101" as any, courseTitle: "Introduction to ISNE",           instructors: ["KENNETH COSH"] }
+] as any;
+
+export let enrollments: Enrollment[] = [
+  { studentId: "650610002", courseId: "261207" },
+  { studentId: "650610002", courseId: "261497" },
+  { studentId: "650610003", courseId: "269101" },
+  { studentId: "650610003", courseId: "261497" },
+];
+
+export let users: User[] = [
+  { username: "user1@abc.com", password: "1234", studentId: "650610001", role: "STUDENT" },
+  { username: "user2@abc.com", password: "1234", studentId: "650610002", role: "STUDENT" },
+  { username: "user3@abc.com", password: "1234", studentId: "650610003", role: "STUDENT" },
+  { username: "user4@abc.com", password: "5678", studentId: null,        role: "ADMIN"   },
+];
+
+// clone เก็บ original เพื่อ reset
+const org_users        = structuredClone(users);
+const org_students     = structuredClone(students);
+const org_courses      = structuredClone(courses);
+const org_enrollments  = structuredClone(enrollments);
+
+export function reset_users()       { users       = structuredClone(org_users); }
+export function reset_students()    { students    = structuredClone(org_students); }
+export function reset_courses()     { courses     = structuredClone(org_courses); }
+export function reset_enrollments() { enrollments = structuredClone(org_enrollments); }
+```
+
+> Tip กับดักที่คุณเจอในงานจริง
+>
+> * อย่าเผลอสะกดตัวแปร/พร็อพเพอร์ตี้ผิด เช่น `zInstructors` ใน `zCoursePutBody` (ควรเป็น `instructors`)
+> * รหัสนักศึกษาหลุดเป็น “650615003” ในบางไฟล์ → ให้統一เป็น “650610003”
+
+**`src/libs/zodValidators.ts`** (เลือก string 6 หลักสำหรับ Lab16)
+
+```ts
+import { z } from "zod";
+
+export const zCourseId = z.string().length(6);                 // รหัสวิชา 6 ตัว (string)
+export const zStudentId = z.string().length(9);                // รหัส นศ. 9 ตัว (string)
+
+const zCourseTitle = z.string().min(6);
+const zInstructors = z.array(z.string()).min(1);
+
+export const zCoursePostBody = z.object({
+  courseId: zCourseId,
+  courseTitle: zCourseTitle,
+  instructors: zInstructors,
+});
+
+export const zCoursePutBody = z.object({
+  courseId: zCourseId,
+  courseTitle: zCourseTitle.nullish(),
+  instructors: zInstructors.nullish(),                         // *** แก้ชื่อให้ตรง ***
+});
+
+const zFirstName = z.string().min(3);
+const zLastName  = z.string().min(3);
+const zProgram   = z.enum(["CPE","ISNE"]);
+const zCourses   = z.array(zCourseId);
+
+export const zStudentPostBody = z.object({
+  studentId: zStudentId,
+  firstName: zFirstName,
+  lastName: zLastName,
+  program: zProgram,
+  courses: zCourses.nullish(),                                  // ใช้ชื่อ courses ให้ตรง
+});
+
+export const zStudentPutBody = z.object({
+  studentId: zStudentId,
+  firstName: zFirstName.nullish(),
+  lastName: zLastName.nullish(),
+  program: zProgram.nullish(),
+});
+
+export const zEnrollmentBody = z.object({
+  studentId: zStudentId,
+  courseId: zCourseId,
+});
+```
+
+## 3.2 Middlewares: `authenticateToken` + RBAC
+
+**`src/middlewares/authenMiddleware.ts`** — ดึง Bearer token, verify, ใส่ payload ใน req
+
+```ts
+import { type Response, type NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+
+import { type CustomRequest, type UserPayload } from "../libs/types.js";
+
+export const authenticateToken = (
+  req: CustomRequest, res: Response, next: NextFunction
+) => {
+  const authHeader = req.headers["authorization"];            // ดึง Authorization header
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {     // ต้องเป็นรูปแบบ Bearer <token>
+    return res.status(401).json({ success: false, message: "Authorization header is required" });
+  }
+
+  const token = authHeader.split(" ")[1];                     // ตัดเอา token
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Token is required" });
+  }
+
+  const secret = process.env.JWT_SECRET || "this_is_my_jwt_secret"; // โหลด secret
+  jwt.verify(token, secret, (err, payload) => {               // verify token
+    if (err) {
+      return res.status(403).json({ success: false, message: "Invalid or expired token" });
+    }
+    req.user = payload as UserPayload;                        // แนบ payload ให้ req
+    req.token = token;                                        // แนบ token ให้ req
+    next();                                                   // ไปต่อ
+  });
+};
+```
+
+**`src/middlewares/checkRoleAdminMiddleware.ts`** — ADMIN เท่านั้น
+
+```ts
+import { type Response, type NextFunction } from "express";
+import { type CustomRequest, type User } from "../libs/types.js";
+import { users } from "../db/db.js";
+
+export const checkRoleAdmin = (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = users.find((u: User) => u.username === req.user?.username); // หา user ใน DB
+  if (!user || user.role !== "ADMIN") {                                     // ต้องมีและเป็น ADMIN
+    return res.status(401).json({ success: false, message: "Unauthorized user" });
+  }
+  next();                                                                   // ผ่าน
+};
+```
+
+**`src/middlewares/checkAllRolesMiddleware.ts`** — แค่ “ต้องเป็น user ที่มีตัวตน”
+
+```ts
+import { type Response, type NextFunction } from "express";
+import { type CustomRequest, type User } from "../libs/types.js";
+import { users } from "../db/db.js";
+
+export const checkAllRoles = (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = users.find((u: User) => u.username === req.user?.username); // ต้องเจอใน DB
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized user" });
+  }
+  next();
+};
+```
+
+**`src/middlewares/checkRoleStudentMiddleware.ts`** — STUDENT เท่านั้น
+
+```ts
+import { type Response, type NextFunction } from "express";
+import { type CustomRequest, type User } from "../libs/types.js";
+import { users } from "../db/db.js";
+
+export const checkRoleStudent = (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = users.find((u: User) => u.username === req.user?.username);
+  if (!user || user.role !== "STUDENT") {
+    return res.status(401).json({ success: false, message: "Unauthorized user" });
+  }
+  next();
+};
+```
+
+**`src/middlewares/invalidJsonMiddleware.ts`** — กัน JSON พัง
+
+```ts
+import { type Request, type Response, type NextFunction } from "express";
+
+interface CustomError extends Error {
+  status?: number;
+  type?: string;
+}
+
+const invalidJsonMiddleware = (err: CustomError, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof SyntaxError && err.status === 400 && err.type === "entity.parse.failed") {
+    return res.status(400).json({ success: false, message: "Invalid JSON payload" });
+  }
+  next(err);
+};
+
+export default invalidJsonMiddleware;
+```
+
+## 3.3 Users routes — `login`, `logout`, `GET /users` (ADMIN)
+
+**`src/routes/usersRoutes.ts`**
+
+```ts
+import { Router, type Request, type Response } from "express";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+
+import type { User, CustomRequest } from "../libs/types.js";
+import { users, reset_users } from "../db/db.js";
+import { authenticateToken } from "../middlewares/authenMiddleware.js";
+import { checkRoleAdmin } from "../middlewares/checkRoleAdminMiddleware.js";
+
+const router = Router();
+
+// GET /api/v2/users (ADMIN only)
+router.get("/", authenticateToken, checkRoleAdmin, (req: Request, res: Response) => {
+  try {
+    return res.status(200).json({ success: true, message: "Successful operation", data: users });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+// POST /api/v2/users/login — ออก token + เก็บลง users[i].tokens
+router.post("/login", (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body as { username: string; password: string; };
+
+    const user = users.find((u: User) => u.username === username && u.password === password);
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid username or password!" });
+    }
+
+    const secret = process.env.JWT_SECRET || "this_is_my_jwt_secret";
+    const token = jwt.sign({ username: user.username, studentId: user.studentId, role: user.role }, secret, { expiresIn: "5m" });
+
+    user.tokens = user.tokens ? [...user.tokens, token] : [token]; // เก็บ token ลง DB (ฟีเจอร์เสริม)
+
+    return res.status(200).json({ success: true, message: "Login successful", token });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something went wrong.", error: err });
+  }
+});
+
+// POST /api/v2/users/logout — remove token ออกจาก users[i].tokens
+router.post("/logout", authenticateToken, (req: CustomRequest, res: Response) => {
+  try {
+    const token = req.token!;
+    const username = req.user!.username;
+
+    const user = users.find((u: User) => u.username === username);
+    if (!user || !user.tokens || !user.tokens.includes(token)) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    user.tokens = user.tokens.filter(t => t !== token); // ลบ token นี้ออก
+    return res.status(200).json({ success: true, message: "Logout successful" });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something went wrong.", error: err });
+  }
+});
+
+// POST /api/v2/users/reset — reset users DB
+router.post("/reset", (req: Request, res: Response) => {
+  try {
+    reset_users();
+    return res.status(200).json({ success: true, message: "User database has been reset" });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+export default router;
+```
+
+## 3.4 Enrollments routes — (ตาม RBAC ของ Lab16)
+
+**`src/routes/enrollmentsRoutes.ts`**
+
+```ts
+import { Router, type Response } from "express";
+import { type CustomRequest, type User, type Student, type Enrollment } from "../libs/types.js";
+
+import { authenticateToken } from "../middlewares/authenMiddleware.js";
+import { checkRoleAdmin } from "../middlewares/checkRoleAdminMiddleware.js";
+import { checkRoleStudent } from "../middlewares/checkRoleStudentMiddleware.js";
+
+import { users, students, enrollments, reset_enrollments } from "../db/db.js";
+import { zStudentId, zEnrollmentBody } from "../libs/zodValidators.js";
+
+const router = Router();
+
+// GET /api/v2/enrollments (ADMIN only) — ดูทั้งหมด
+router.get("/", authenticateToken, checkRoleAdmin, (req: CustomRequest, res: Response) => {
+  try {
+    const data = students.map((s: Student) => ({
+      studentId: s.studentId,
+      courses: enrollments.filter(e => e.studentId === s.studentId).map(e => e.courseId)
+    }));
+    return res.status(200).json({ success: true, message: "Enrollments Information", data });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+// POST /api/v2/enrollments/reset (ADMIN only)
+router.post("/reset", authenticateToken, checkRoleAdmin, (req: CustomRequest, res: Response) => {
+  try {
+    reset_enrollments();
+    return res.status(200).json({ success: true, message: "enrollments database has been reset" });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+// GET /api/v2/enrollments/:studentId (ADMIN หรือ STUDENT เจ้าของข้อมูล)
+router.get("/:studentId", authenticateToken, (req: CustomRequest, res: Response) => {
+  try {
+    const studentId = req.params.studentId;
+    const ok = zStudentId.safeParse(studentId);
+    if (!ok.success) {
+      return res.status(400).json({ message: "Validation failed", errors: ok.error.issues[0]?.message });
+    }
+
+    const studentIdx = students.findIndex(s => s.studentId === studentId);
+    if (studentIdx === -1) {
+      return res.status(404).json({ success: false, message: "StudentId does not exists" });
+    }
+
+    const caller = users.find((u: User) => u.username === req.user?.username);
+    if (!caller) {
+      return res.status(401).json({ success: false, message: "Unauthorized user" });
+    }
+
+    if (caller.role !== "ADMIN" && caller.studentId !== studentId) {
+      return res.status(403).json({ success: false, message: "Forbidden access" });
+    }
+
+    const courseIds = enrollments.filter(e => e.studentId === studentId).map(e => e.courseId);
+    return res.status(200).json({ success: true, message: "Student information", data: { studentId, courses: courseIds } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+// POST /api/v2/enrollments/:studentId (STUDENT เจ้าของเท่านั้น) — add ลงทะเบียน
+router.post("/:studentId", authenticateToken, checkRoleStudent, (req: CustomRequest, res: Response) => {
+  try {
+    const studentId = req.params.studentId;
+    const body = req.body as Enrollment;
+
+    const ok1 = zStudentId.safeParse(studentId);
+    const ok2 = zEnrollmentBody.safeParse(body);
+    if (!ok1.success) return res.status(400).json({ message: "Validation failed", errors: ok1.error.issues[0]?.message });
+    if (!ok2.success) return res.status(400).json({ message: "Validation failed", errors: ok2.error.issues[0]?.message });
+
+    const caller = users.find((u: User) => u.username === req.user?.username);
+    if (!caller || caller.studentId !== studentId || body.studentId !== studentId) {
+      return res.status(403).json({ success: false, message: "Forbidden access" });
+    }
+
+    const sIdx = students.findIndex(s => s.studentId === studentId);
+    if (sIdx === -1) return res.status(404).json({ success: false, message: "StudentId does not exists" });
+
+    const dup = enrollments.find(e => e.studentId === studentId && e.courseId === body.courseId);
+    if (dup) {
+      return res.status(409).json({ success: false, message: "Enrollment is already exists" });
+    }
+
+    enrollments.push({ studentId, courseId: body.courseId }); // insert enrollment
+
+    const newCourses = enrollments.filter(e => e.studentId === studentId).map(e => e.courseId);
+    students[sIdx] = { ...students[sIdx], courses: newCourses as any }; // sync ฟิลด์ courses ใน Student (optional)
+
+    return res.status(200).json({
+      success: true,
+      message: `Student ${studentId} && Course ${body.courseId} has been added successfully`,
+      data: { studentId, courseId: body.courseId }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+// DELETE /api/v2/enrollments/:studentId (STUDENT เจ้าของเท่านั้น) — drop รายวิชา
+router.delete("/:studentId", authenticateToken, checkRoleStudent, (req: CustomRequest, res: Response) => {
+  try {
+    const studentId = req.params.studentId;
+    const body = req.body as { studentId: string; courseId: string; };
+
+    const ok1 = zStudentId.safeParse(studentId);
+    const ok2 = zEnrollmentBody.safeParse(body);
+    if (!ok1.success) return res.status(400).json({ message: "Validation failed", errors: ok1.error.issues[0]?.message });
+    if (!ok2.success) return res.status(400).json({ message: "Validation failed", errors: ok2.error.issues[0]?.message });
+
+    const caller = users.find((u: User) => u.username === req.user?.username);
+    if (!caller || caller.studentId !== studentId || body.studentId !== studentId) {
+      return res.status(403).json({ success: false, message: "Forbidden access" });
+    }
+
+    const sIdx = students.findIndex(s => s.studentId === studentId);
+    if (sIdx === -1) return res.status(404).json({ success: false, message: "StudentId does not exists" });
+
+    const eIdx = enrollments.findIndex(e => e.studentId === studentId && e.courseId === body.courseId);
+    if (eIdx === -1) {
+      return res.status(404).json({ success: false, message: "Enrollment does not exists" });
+    }
+
+    enrollments.splice(eIdx, 1); // ลบ enrollment
+    const newCourses = enrollments.filter(e => e.studentId === studentId).map(e => e.courseId);
+    students[sIdx] = { ...students[sIdx], courses: newCourses as any }; // sync ให้ตรง
+
+    return res.status(200).json({
+      success: true,
+      message: `Student ${studentId} && Course ${body.courseId} has been deleted successfully`,
+      data: { studentId, courses: newCourses }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Something is wrong, please try again", error: err });
+  }
+});
+
+export default router;
+```
+
+## 3.5 Index (รวมทุกอย่าง)
+
+```ts
+import express, { type Request, type Response } from "express";
+import morgan from "morgan";
+
+import invalidJsonMiddleware from "./middlewares/invalidJsonMiddleware.js";
+
+import usersRoutes        from "./routes/usersRoutes.js";
+import enrollmentsRoutes  from "./routes/enrollmentsRoutes.js";
+
+const app  = express();
+const port = Number(process.env.PORT) || 3000;
+
+app.use(express.json());
+app.use(morgan("dev"));
+app.use(invalidJsonMiddleware);
+
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).send("Lab 16 API services");
+});
+
+app.use("/api/v2/users",        usersRoutes);
+app.use("/api/v2/enrollments",  enrollmentsRoutes);
+
+// not-found fallback
+app.use((req, res) => res.status(404).json({ success:false, message:"Endpoint not found" }));
+
+app.listen(port, () => console.log(`🚀 Server running on http://localhost:${port}`));
+export default app;
+```
+
+---
+
+# 4) ทดสอบด้วย Insomnia (ทีละขั้น)
+
+## A) เตรียมข้อมูล
+
+1. `POST /api/v2/users/reset` (ไม่บังคับ แต่ดีเวลาซ้อม)
+2. `POST /api/v2/enrollments/reset` (ต้องแนบ Bearer token ของ ADMIN ในข้อ B ก่อน)
+
+## B) Login
+
+* **Admin**: `POST /api/v2/users/login`
+  Body:
+
+  ```json
+  { "username": "user4@abc.com", "password": "5678" }
+  ```
+
+  ได้ `token` → ตั้งใน Insomnia: Auth → Bearer → ใส่ token
+
+* **Student (เช่น user2)**:
+
+  ```json
+  { "username": "user2@abc.com", "password": "1234" }
+  ```
+
+## C) เรียก Endpoints ตามสิทธิ์
+
+* **Admin เท่านั้น**
+
+  * `GET /api/v2/enrollments` → ควรเห็นทุกคน
+  * `POST /api/v2/enrollments/reset` → เคลียร์กลับ default
+
+* **Admin + Student เจ้าของข้อมูล**
+
+  * `GET /api/v2/enrollments/650610002`
+
+    * Admin เรียกได้ทุกคน
+    * Student เรียกได้เฉพาะของตนเองเท่านั้น มิฉะนั้น 403
+
+* **Student เจ้าของข้อมูลเท่านั้น**
+
+  * เพิ่ม: `POST /api/v2/enrollments/650610002`
+
+    ```json
+    { "studentId": "650610002", "courseId": "261207" }
+    ```
+
+    *ถ้าซ้ำ* → 409
+  * ลบ: `DELETE /api/v2/enrollments/650610002`
+
+    ```json
+    { "studentId": "650610002", "courseId": "261207" }
+    ```
+
+    *ถ้าไม่พบ* → 404
+
+---
+
+# 5) เช็กลิสต์ก่อนสอบ + กับดักพบบ่อย
+
+**เช็กลิสต์ (Lab15)**
+
+* `/me` ตอบ JSON ตัวเองครบฟิลด์
+* `GET /api/v2/students/:id/courses`
+
+  * 400 เมื่อ id รูปแบบผิด
+  * 404 เมื่อไม่พบ นศ.
+  * 200 คืนชื่อวิชาตามรหัส
+* `GET /api/v2/courses/:courseId`
+
+  * 400 เมื่อไม่ใช่ 6 หลัก
+  * 404 เมื่อไม่พบ
+* `POST /api/v2/courses`
+
+  * 400 เมื่อ body ไม่ตรง schema
+  * 409 เมื่อซ้ำ
+  * 201 เมื่อสำเร็จ
+* `PUT /api/v2/courses`
+
+  * 400 body ผิด, 404 ไม่เจอ, 200 สำเร็จ
+* `DELETE /api/v2/courses`
+
+  * 400 body ผิด, 404 ไม่เจอ, 200/204 สำเร็จ
+
+**เช็กลิสต์ (Lab16)**
+
+* `POST /api/v2/users/login` ได้ token (หมดอายุได้)
+* ใช้ middleware ตรวจ Bearer token ทุก endpoint ที่ต้อง auth
+* RBAC:
+
+  * ADMIN: ดู enrollments ทั้งหมด + reset
+  * ADMIN/STUDENT: ดูของ studentId ตามเงื่อนไข
+  * STUDENT เจ้าของข้อมูลเท่านั้น: add/drop
+* ลำดับตรวจสอบที่ดี: **validate** → **auth** → **role** → **process** → **respond**
+
+**กับดักแก้ง่าย ๆ ที่ผมเห็นในโค้ดเดิมคุณ**
+
+* ใช้ชื่อฟิลด์ไม่ตรงกัน (`course` vs `courses`, `zInstructors` vs `instructors`) → ให้ “ตั้งชื่อเดียว” ทุกที่
+* Path ไม่ตรงสเปก (`/api/v2/course/:id` ควรเป็น `/api/v2/courses/:id`)
+* รหัส นศ./วิชา เผลอเป็นคนละชนิด (string vs number) → **เลือกอย่างเดียวทั้งระบบ**
+* ลืม `return` เวลา response → โค้ดไหลต่อแล้วยิงซ้ำ
+* ลืม `try/catch` → error ไม่สวย, ได้ 500 โดยไม่ตั้งใจ
+* ลืมเช็กซ้ำก่อน push (POST) → กลายเป็นซ้ำซ้อนไม่ตั้งใจ
+
+---
+
+# mini-cheatsheet (พกในหัวเวลาเข้าห้อง)
+
+* **Status**: 200 OK / 201 Created / 400 Bad / 401 Unauth / 403 Forbidden / 404 Not Found / 409 Conflict / 500 Server
+* **REST รูปแบบ**:
+
+  * อ่าน: `GET /res`, `GET /res/:id`
+  * สร้าง: `POST /res`  (body JSON)
+  * แก้: `PUT /res`     (body มี id + fields)
+  * ลบ: `DELETE /res`  (body มี id)
+* **Zod pattern**:
+
+  ```ts
+  const ok = schema.safeParse(input);
+  if (!ok.success) return res.status(400).json({ errors: ok.error.issues[0]?.message });
+  ```
+* **JWT flow**:
+
+  1. `/login` → เซ็น token ด้วย `JWT_SECRET`
+  2. Client แนบ `Authorization: Bearer <token>`
+  3. Middleware `jwt.verify` → ผูก `req.user`
+  4. RBAC: ตรวจ `user.role` และ “เจ้าของข้อมูล” ก่อนทำงาน
+
+---
+
+ถ้าคุณเปิดโปรเจ็กต์เดิมใน VSCode ให้ตรวจ **diff** ตามไฟล์ตัวอย่างด้านบนและแก้ชื่อฟิลด์/เส้นทาง/ตัวสะกดให้ “คงเส้นคงวา” ทั้งระบบ แล้วใช้ Insomnia ทดสอบตาม Step ที่ให้ คุณจะครอบคลุม rubric ของทั้ง Lab15 และ Lab16 ได้ครบถ้วน
+
+อยากให้ผมเช็กไฟล์ของคุณ “แบบเทียบทีละบรรทัด” จุดไหนควรแก้ยังไง บอกได้เลย—ผมจะไล่รีวิวให้แบบรวดเร็ว พร้อมแก้ให้คอมเมนต์ทุกบรรทัดเหมือนตัวอย่างข้างบนครับ 🚀
+
 

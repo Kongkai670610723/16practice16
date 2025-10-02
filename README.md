@@ -2875,3 +2875,662 @@ export default app;
 อยากให้ผมเช็กไฟล์ของคุณ “แบบเทียบทีละบรรทัด” จุดไหนควรแก้ยังไง บอกได้เลย—ผมจะไล่รีวิวให้แบบรวดเร็ว พร้อมแก้ให้คอมเมนต์ทุกบรรทัดเหมือนตัวอย่างข้างบนครับ 🚀
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+เข้าใจเลยครับ ✨
+คุณอยากได้ **Roadmap เวลาสอบ** — ถ้าเจอโจทย์ API ให้ทำทีละขั้นไม่หลงทาง
+
+ผมสรุปให้เป็น “**ขั้นตอนทีละข้อ**” (เหมือน Checklist) ที่คุณสามารถเปิดดูแล้วทำตามได้เลยครับ
+
+---
+
+# 🛠 ขั้นตอนทำโจทย์ API ตอนสอบ
+
+### 1. อ่านโจทย์ + แยกประเภท
+
+* ดูว่าโจทย์ถามแนวไหน?
+
+  * **Lab15** → CRUD Student / Course
+  * **Lab16** → Users, JWT, RBAC, Enrollments
+* สรุปให้ชัดว่า endpoint ต้องการ **GET / POST / PUT / DELETE**
+
+---
+
+### 2. เตรียมโครงไฟล์
+
+* สร้างหรือเปิด `index.ts`
+* import express + morgan
+* ใส่ middleware `express.json()` และ logger
+* เขียน `app.listen(3000)` → print `"🚀 Server running..."`
+
+(โครงนี้คือฐานของทุกข้อ)
+
+---
+
+### 3. สร้าง Router / Endpoint
+
+* ถ้าเป็น CRUD → ทำไฟล์ `studentRoutes.ts` หรือ `courseRoutes.ts`
+* ถ้าเป็น auth → `usersRoutes.ts`
+* ถ้าเป็น enrollment → `enrollmentsRoutes.ts`
+* import Router จาก express → `const router = Router();`
+* กำหนดเส้นทาง (`router.get(...)`, `router.post(...)`)
+
+---
+
+### 4. จัดการข้อมูล (DB Mock)
+
+* ใช้ array ในหน่วยความจำ (students[], courses[], enrollments[], users[])
+* เวลา POST → `push` เข้า array
+* เวลา PUT → `findIndex` → แก้ค่าใน array
+* เวลา DELETE → `findIndex` → `splice` ลบออก
+* เวลา GET → `find` หรือ `filter` แล้วส่งออก
+
+---
+
+### 5. ตรวจสอบ Input (Validation)
+
+* ใช้ Zod ตรวจ
+
+  * studentId → 9 หลัก
+  * courseId → 6 หลัก
+  * program → enum (“CPE” | “ISNE”)
+* เขียนโค้ดแบบนี้เสมอ:
+
+  ```ts
+  const result = zStudentId.safeParse(studentId);
+  if (!result.success) {
+    return res.status(400).json({ message: "Validation failed" });
+  }
+  ```
+
+---
+
+### 6. จัดการ Error / Response
+
+* ถ้าไม่เจอข้อมูล → 404
+* ถ้าซ้ำกัน (insert duplicate) → 409
+* ถ้าข้อมูลผิดรูปแบบ → 400
+* ถ้าสำเร็จ:
+
+  * GET → 200
+  * POST → 201
+  * PUT / DELETE → 200 (หรือ 204)
+
+---
+
+### 7. ถ้าโจทย์มี **JWT / Authentication**
+
+* เขียน `/users/login` → ใช้ `jwt.sign` สร้าง token
+* แนบ token ใน response
+* สร้าง middleware `authenticateToken` → ตรวจ Bearer token
+* ผูก `req.user` กับ payload
+
+---
+
+### 8. ถ้าโจทย์มี **Role-based Access (RBAC)**
+
+* เขียน middleware:
+
+  * `checkRoleAdmin` → เฉพาะ ADMIN
+  * `checkRoleStudent` → เฉพาะ STUDENT
+* เช็คใน route ว่า user ที่ login มีสิทธิ์เข้าถึงข้อมูลหรือไม่
+* ถ้าไม่มีสิทธิ์ → 403 Forbidden
+
+---
+
+### 9. ทดสอบ (Insomnia / Postman)
+
+* เริ่มจาก `GET /` → เช็ค server online
+* ทดลอง `POST` → ตรวจ body เข้ารึยัง
+* ทดลองผิด input → ต้องได้ 400
+* ทดลอง token หมดอายุ → ต้องได้ 403
+
+---
+
+### 10. สรุป + tidy up
+
+* อย่าลืม `export default router;`
+* ใน index.ts → `app.use("/api/v2/students", studentRoutes)`
+* log ข้อความที่เข้าใจง่าย เช่น `"Course added successfully"`
+* ส่งงานขึ้น GitHub / Vercel ตามโจทย์
+
+---
+
+## ✅ Mini Checklist (จำใส่หัวเวลาเจอข้อสอบ)
+
+1. ตั้งโครง express + middleware
+2. แยก router ตามโจทย์
+3. mock DB (array)
+4. implement GET / POST / PUT / DELETE
+5. validation → Zod → 400
+6. error → 404/409/500
+7. auth (ถ้ามี) → JWT → middleware
+8. role (ถ้ามี) → check ADMIN/STUDENT
+9. test → Insomnia
+10. export + app.use
+
+---
+
+อยากให้ผมทำเป็น **Flowchart (ผังขั้นตอน)** แบบภาพให้เลยมั้ยครับ? จะได้เห็นเป็นภาพไหลจาก “เจอโจทย์ → ตั้งโครง → validation → auth → role → response” 🚀
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+โอเคเลยครับ ✨
+ก่อนสอบ คุณควรมี **Core Knowledge** ที่จำได้แม่น + เข้าใจจริง ไม่งั้นพอเจอโจทย์จะเสียเวลาไปนั่งหา Google เยอะเกินไป
+
+ผมสรุปเป็น **สิ่งที่ควรรู้ก่อนสอบ** (ตามเนื้อหาที่คุณเรียน Lab15 + Lab16)
+
+---
+
+# 📘 Core Knowledge ที่ต้องรู้ให้ได้
+
+## 1. พื้นฐาน Express + API
+
+* การสร้าง server ด้วย Express:
+
+  ```ts
+  import express from "express";
+  const app = express();
+  app.use(express.json()); // parse JSON body
+  app.listen(3000, () => console.log("Server running"));
+  ```
+* การสร้าง **endpoint**:
+
+  * `app.get("/", (req, res) => {...})`
+  * `app.post("/", (req, res) => {...})`
+  * `app.put("/", (req, res) => {...})`
+  * `app.delete("/", (req, res) => {...})`
+* ความต่าง `req.params`, `req.query`, `req.body`
+
+---
+
+## 2. Status Codes ที่ใช้บ่อย
+
+* **200 OK** → GET สำเร็จ, PUT/DELETE สำเร็จ
+* **201 Created** → POST สำเร็จ
+* **400 Bad Request** → validation ไม่ผ่าน
+* **401 Unauthorized** → ไม่มี token หรือ login ไม่ถูก
+* **403 Forbidden** → มี token แต่ role ไม่มีสิทธิ์
+* **404 Not Found** → หาไม่เจอ (student/course/enrollment)
+* **409 Conflict** → ข้อมูลซ้ำ เช่น `studentId` ซ้ำ
+* **500 Internal Server Error** → error ใน server
+
+---
+
+## 3. การจัดการข้อมูล (Mock DB)
+
+* เก็บข้อมูลไว้ใน **array** เช่น
+
+  ```ts
+  let students = [{ studentId: "650610001", firstName: "Matt", ... }];
+  ```
+* ใช้ `find`, `findIndex`, `filter`, `push`, `splice`
+* ใช้ `...spread` เพื่อ update object
+
+---
+
+## 4. Zod Validation
+
+* ใช้ `safeParse` เพื่อ validate:
+
+  ```ts
+  const result = zStudentId.safeParse(req.params.studentId);
+  if (!result.success) return res.status(400).json({ message: "Validation failed" });
+  ```
+* ตัวอย่างที่ต้องจำ:
+
+  * `.string().length(9)` → StudentId 9 หลัก
+  * `.string().length(6)` → CourseId 6 หลัก
+  * `z.enum(["CPE","ISNE"])` → Program
+  * `z.array(z.string())` → รายวิชา
+
+---
+
+## 5. JWT (Lab16)
+
+* สร้าง token ตอน login:
+
+  ```ts
+  const token = jwt.sign(
+    { username: user.username, studentId: user.studentId, role: user.role },
+    process.env.JWT_SECRET || "secret",
+    { expiresIn: "5m" }
+  );
+  ```
+* ตรวจ token ด้วย middleware:
+
+  ```ts
+  const authHeader = req.headers["authorization"];
+  if (!authHeader?.startsWith("Bearer ")) return res.status(401).json(...);
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, secret, (err, user) => {
+    if (err) return res.status(403).json(...);
+    req.user = user; next();
+  });
+  ```
+
+---
+
+## 6. Role-based Access Control (RBAC)
+
+* **ADMIN** → เข้าถึงทุกอย่าง
+* **STUDENT** → เข้าถึงได้เฉพาะข้อมูลของตัวเอง
+* Middleware:
+
+  ```ts
+  if (req.user.role !== "ADMIN") return res.status(401).json(...);
+  ```
+* Use case:
+
+  * GET users → ADMIN เท่านั้น
+  * GET student/:id → ADMIN เข้าทุกคน, STUDENT เข้าของตัวเอง
+
+---
+
+## 7. Enrollments (Lab16)
+
+* GET `/enrollments` → ADMIN เห็นทุกคน
+* GET `/enrollments/:studentId` → ADMIN เห็นทุกคน, STUDENT เห็นของตัวเอง
+* POST `/enrollments/:studentId` → STUDENT เพิ่มรายวิชา
+* DELETE `/enrollments/:studentId` → STUDENT ลบรายวิชา
+
+---
+
+# ✅ สิ่งที่ต้อง "เข้าใจจริง" ก่อนสอบ
+
+1. **วิธีสร้าง Express API พื้นฐาน** (get/post/put/delete)
+2. **วิธีใช้ req.params, req.query, req.body**
+3. **Status code ไหนใช้เมื่อไร**
+4. **Zod ใช้ validate ข้อมูลยังไง**
+5. **JWT ทำงานยังไง** (sign, verify, bearer header)
+6. **RBAC คืออะไร** และตรวจ role ยังไง
+7. **Array methods** (`find`, `findIndex`, `filter`, `map`, `splice`)
+8. **ลำดับการเขียนโค้ด** → router → validate → logic → response
+
+---
+
+👉 ถ้าคุณจำพวกนี้ได้ ต่อให้โจทย์เปลี่ยน wording คุณก็จับทางออกทันที
+เหมือน “แกนกลาง” ของข้อสอบ
+
+---
+
+อยากให้ผมทำ **Mindmap (ผังความรู้)** แยกหัวข้อ Express, Zod, JWT, RBAC, CRUD ออกเป็นภาพเดียวไว้ทบทวนก่อนไปสอบมั้ยครับ?
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ได้เลย! เข้าใจว่าหมายถึงการ “ใช้ `res.status(...)` ให้ถูกต้อง” และ “จัดการ `port` ต่างๆ” ใน Express ว่าควรแยก/ตั้งค่าอย่างไร ใช้อย่างไรให้เป็นระบบ ผมสรุปให้เป็น 3 ส่วนสั้นๆ ใช้ได้ทันทีครับ
+
+---
+
+# 1) ใช้ `res.status(...)` ให้ถูก + เป็นระบบ
+
+### พื้นฐาน
+
+```ts
+// ส่งสถานะอย่างเดียว (ไม่ค่อยทำ)
+res.status(204).end();
+
+// ส่งสถานะ + ข้อความธรรมดา
+res.status(200).send("OK");
+
+// ส่งสถานะ + JSON (นิยมสุด)
+res.status(201).json({ success: true, message: "Created" });
+```
+
+### ทำไมมักจะ “chain”
+
+* `res.status(XXX)` คืนค่า `res` → จึงตามด้วย `.json(...)`/`.send(...)` ต่อได้
+* เลือก `.json(...)` เมื่อส่งข้อมูลเชิงโครงสร้าง (object/array)
+
+### สถานะยอดฮิต (จำให้ได้)
+
+* `200 OK` → อ่าน/อัปเดต/ลบสำเร็จ
+* `201 Created` → สร้างสำเร็จ (POST)
+* `204 No Content` → สำเร็จแต่ไม่มีเนื้อหา (DELETE/PUT บางกรณี)
+* `400 Bad Request` → validate ไม่ผ่าน (Zod fail)
+* `401 Unauthorized` → ไม่มี/ไม่ส่ง Bearer token
+* `403 Forbidden` → มี token แต่สิทธิ์ไม่พอ (RBAC)
+* `404 Not Found` → หา resource ไม่เจอ
+* `409 Conflict` → ซ้ำ (เช่น `courseId` หรือ enrollment ซ้ำ)
+* `500 Internal Server Error` → ผิดที่ฝั่งเซิร์ฟเวอร์
+
+### โครง response แนะนำ (ให้สม่ำเสมอทั้งโปรเจ็กต์)
+
+```ts
+return res.status(400).json({
+  success: false,
+  message: "Validation failed",
+  errors: result.error.issues,   // หรือ issues[0]?.message ถ้าต้องการสั้น
+});
+```
+
+### แยก helper (ทำโค้ดสะอาด อ่านง่าย)
+
+```ts
+// src/libs/http.ts
+export const ok = (res: any, data: any, message = "OK") =>
+  res.status(200).json({ success: true, message, data });
+
+export const created = (res: any, data: any, message = "Created") =>
+  res.status(201).json({ success: true, message, data });
+
+export const badRequest = (res: any, message = "Bad Request", errors?: any) =>
+  res.status(400).json({ success: false, message, errors });
+
+// ใช้ใน route:
+import { ok, created, badRequest } from "../libs/http.js";
+
+if (!result.success) return badRequest(res, "Validation failed", result.error.issues);
+return created(res, newCourse, "Course created");
+```
+
+> ทิป: **อย่าลืม `return`** เวลา `res.status(...).json(...)` แล้ว เพื่อหยุดฟังก์ชันไม่ให้ไหลไปตอบซ้ำ
+
+---
+
+# 2) ตั้งค่า/ใช้ `PORT` ให้ถูกวิธี
+
+### พื้นฐาน (อ่านจาก `.env` + ค่า default)
+
+```ts
+// .env
+PORT=3000
+
+// index.ts
+import dotenv from "dotenv";
+dotenv.config();
+
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, () => console.log(`🚀 http://localhost:${port}`));
+```
+
+### ทำไมต้องอ่านจาก `.env`
+
+* บนเครื่องเราอยากใช้ 3000/3001 ได้ตามชอบ
+* บนระบบ deploy (เช่น Vercel/Render) บางที่ “กำหนด port ให้” ผ่าน env → เราเพียงอ่าน `process.env.PORT`
+
+### ถ้าพอร์ตถูกใช้อยู่ (EADDRINUSE)
+
+* เปลี่ยนพอร์ตชั่วคราว: `PORT=3001 pnpm dev` (บน mac/linux) หรือใช้ `.env` อีกไฟล์
+* ปิดโปรเซสเดิม:
+
+  * mac/linux: `lsof -i :3000` ดู PID → `kill -9 <PID>`
+  * windows: `netstat -ano | findstr :3000` ดู PID → `taskkill /PID <PID> /F`
+
+### รันหลายเซอร์วิสพร้อมกัน
+
+* โปรเจ็กต์ A → `PORT=3000`
+* โปรเจ็กต์ B → `PORT=3001`
+* Insomnia/Browser ต้องยิงให้ตรง `http://localhost:3001/...`
+
+### ตั้งพอร์ตผ่านสคริปต์
+
+```json
+// package.json
+{
+  "scripts": {
+    "dev": "nodemon --exec tsx src/index.ts",
+    "dev:3001": "cross-env PORT=3001 nodemon --exec tsx src/index.ts"
+  }
+}
+```
+
+> บน Windows แนะนำ `cross-env` (ติดตั้ง `pnpm add -D cross-env`) เพื่อเซ็ต env แบบข้ามแพลตฟอร์ม
+
+---
+
+# 3) แยก “config พอร์ต/แอป” ให้เป็นสัดส่วน (ถ้าข้อสอบชอบโครงสวย)
+
+```ts
+// src/config/server.ts
+import dotenv from "dotenv";
+dotenv.config();
+
+export const config = {
+  port: Number(process.env.PORT) || 3000,
+  jwtSecret: process.env.JWT_SECRET || "this_is_my_jwt_secret",
+};
+
+// src/index.ts
+import express from "express";
+import morgan from "morgan";
+import { config } from "./config/server.js";
+
+const app = express();
+app.use(express.json());
+app.use(morgan("dev"));
+
+app.get("/", (_, res) => res.status(200).send("OK"));
+
+app.listen(config.port, () =>
+  console.log(`🚀 http://localhost:${config.port}`)
+);
+```
+
+ข้อดี:
+
+* เปลี่ยนพอร์ต/secret ที่เดียว
+* time-to-fix เร็วเมื่อ deploy/ย้ายเครื่อง
+
+---
+
+## สรุปสั้น (จำไปใช้ตอนสอบ)
+
+* `res.status(code).json(payload)` → โครงสร้าง payload คงเส้นคงวา (มี `success`, `message`, `data/errors`)
+* ใช้ `201` สำหรับ POST สำเร็จ, `409` เมื่อซ้ำ, `400` เมื่อ validate fail, `403` เมื่อ role ไม่พอ
+* พอร์ตอ่านจาก `.env` → `const port = Number(process.env.PORT) || 3000;`
+* พอร์ตชนกัน → เปลี่ยนพอร์ต/kill โปรเซสเดิม
+* ถ้าอยากสวย/ทดสอบง่าย → แยก `config`, ทำ helper สำหรับ response
+
+ถ้าอยากให้ผม **ลอง refactor** route ใด route หนึ่งของคุณให้ใช้ helper `ok/created/badRequest` + โชว์ผลลัพธ์ response ที่คงรูปแบบ บอกชื่อไฟล์/endpoint มาได้เลย เดี๋ยวจัดให้ในสไตล์ข้อสอบครับ!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ได้เลยครับ ✨ นี่คือ **5 บรรทัดสั้น ๆ กำลังใจก่อนสอบ**
+
+1. **โครง Express จำให้ขึ้นใจ** → `app.use(express.json()); app.listen(PORT)`
+2. **CRUD = GET/POST/PUT/DELETE** → เช็คว่าโจทย์ให้ทำอันไหน
+3. **Validate ก่อนเสมอ** → ถ้า fail → `400 Bad Request`
+4. **JWT → Authen, Role → Authorize** → ADMIN เห็นทุกคน, STUDENT เห็นแค่ตัวเอง
+5. ถ้าติด **ไม่ต้องเครียด** → Google keyword ที่เราเตรียมไว้ → หาตัวอย่าง → แก้ให้ตรงโจทย์
+
+---
+
+✌️ ขอให้วันนี้สอบแล้วลื่นไหล ไม่สะดุด ทำเสร็จไว ได้คะแนนเต็ม ๆ ไปเลยครับ 🚀🔥
+
+อยากให้ผมทำ **ประโยคสั้น ๆ จำง่าย ๆ** เหมือน “คาถาสอบ” เอาไว้ท่องก่อนเข้าห้องด้วยมั้ย?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+โอเคครับ 🙌 ผมทำ “คาถาสอบ” ให้เลย แบบสั้น ๆ จำง่าย ๆ ไว้ท่องก่อนเข้าห้องสอบ
+
+---
+
+# 🪄 คาถาสอบ REST API
+
+**“โครงพร้อม, CRUD ชัด, Validate ก่อน, Status ถูก, JWT Auth, Role Guard”**
+
+---
+
+📌 ความหมายสั้น ๆ
+
+* **โครงพร้อม** → express.json + app.listen
+* **CRUD ชัด** → GET / POST / PUT / DELETE ตามโจทย์
+* **Validate ก่อน** → Zod ตรวจ input → fail = 400
+* **Status ถูก** → 200/201/400/403/404/409 ใช้ให้ตรง
+* **JWT Auth** → ตรวจ token ก่อนเสมอ
+* **Role Guard** → ADMIN = ทุกอย่าง, STUDENT = ของตัวเอง
+
+---
+
+เอาไว้เป็น “สูตรท่อง” เวลาเจอโจทย์ จะนึก flow ออกทันที 🚀🔥
+
+อยากให้ผมทำเป็น **Mindmap ภาพเดียว** สรุปคาถานี้ + flow การเขียน API ครบ (Express + Zod + JWT + RBAC) ไว้เป็นแผ่นทบทวนก่อนสอบมั้ยครับ?
+

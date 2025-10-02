@@ -1567,37 +1567,37 @@ export default router; // ส่ง router ไปเมาท์ใน index.ts
 
 
 
-(Cheat Sheet)
+**(Cheat Sheet)**
 เป็นตารางสั้น ๆ “**สถานการณ์โจทย์ที่อาจออก** → **keyword ที่ควรเสิร์ชใน Google**”
 เพื่อใช้ตอนสอบได้เร็ว ไม่ต้องคิดเองเยอะ
 
 ---
 
-#  RESTful API (Lab15 + Lab16)
+# 📌  RESTful API (Lab15 + Lab16)
 
-| สถานการณ์ที่เจอโจทย์                                   | Keyword ที่เสิร์ชใน Google                           |
-| --------------------------------------------------- | ----------------------------------------------- 
-|  CRUD API (GET/POST/PUT/DELETE)                     | `express typescript crud api example`           |
-|  เขียน Router แบบแยกไฟล์                             | `express router typescript example`             |
-|  ใช้ req.params (เช่น `/students/:id`)                | `express req.params example`                    |
-|  ใช้ req.query (เช่น `/students?program=CPE`)         | `express req.query example`                     |
-|  อ่าน body JSON                                      | `express post json body example`                |
-|  ส่ง status code ที่ถูกต้อง (200, 201, 400, 404, 409)   | `express res status code example`               |
-|  ตรวจสอบข้อมูลด้วย Zod                                | `zod safeParse express example`                 |
-| ตรวจสอบ string ต้องยาวเท่านี้                           | `zod string length example`                     |
-| ตรวจสอบ enum (CPE, ISNE)                            | `zod enum validation example`                   |
-| ตรวจสอบ array ของข้อมูล                              | `zod array validation example`                  |
-| สร้าง JWT ตอน login                                  | `jsonwebtoken sign verify express typescript`   |
-| ตรวจ JWT จาก Header (Bearer token)                  | `express jwt authentication middleware example` |
-| Middleware ตรวจ role เป็น ADMIN เท่านั้น                | `express middleware check role admin`           |
-| Middleware ตรวจ role เป็น STUDENT เท่านั้น              | `express middleware check role student`         |
-| Role-based Access Control (RBAC)                    | `express role based access control example`     |
-| Reset database ด้วย endpoint                         | `express post reset route example`              |
-| Add enrollment (POST /enrollments/:studentId)       | `express router post with params example`       |
-| Drop enrollment (DELETE /enrollments/:studentId)    | `express delete request body example`           |
-| Debug error เช่น `req.body undefined`                | `express req.body undefined fix`                |
-| Debug error JWT                                     | `jsonwebtoken invalid signature express`        |
-| Debug error Zod                                     | `zod safeParse error example`                   |
+| สถานการณ์ที่เจอโจทย์                                   | Keyword ที่เสิร์ชใน Google                      |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| ✅ CRUD API (GET/POST/PUT/DELETE)                       | `express typescript crud api example`           |
+| ✅ เขียน Router แบบแยกไฟล์                              | `express router typescript example`             |
+| ✅ ใช้ req.params (เช่น `/students/:id`)                | `express req.params example`                    |
+| ✅ ใช้ req.query (เช่น `/students?program=CPE`)         | `express req.query example`                     |
+| ✅ อ่าน body JSON                                       | `express post json body example`                |
+| ✅ ส่ง status code ที่ถูกต้อง (200, 201, 400, 404, 409) | `express res status code example`               |
+| ✅ ตรวจสอบข้อมูลด้วย Zod                                | `zod safeParse express example`                 |
+| ✅ ตรวจสอบ string ต้องยาวเท่านี้                        | `zod string length example`                     |
+| ✅ ตรวจสอบ enum (CPE, ISNE)                             | `zod enum validation example`                   |
+| ✅ ตรวจสอบ array ของข้อมูล                              | `zod array validation example`                  |
+| ✅ สร้าง JWT ตอน login                                  | `jsonwebtoken sign verify express typescript`   |
+| ✅ ตรวจ JWT จาก Header (Bearer token)                   | `express jwt authentication middleware example` |
+| ✅ Middleware ตรวจ role เป็น ADMIN เท่านั้น             | `express middleware check role admin`           |
+| ✅ Middleware ตรวจ role เป็น STUDENT เท่านั้น           | `express middleware check role student`         |
+| ✅ Role-based Access Control (RBAC)                     | `express role based access control example`     |
+| ✅ Reset database ด้วย endpoint                         | `express post reset route example`              |
+| ✅ Add enrollment (POST /enrollments/:studentId)        | `express router post with params example`       |
+| ✅ Drop enrollment (DELETE /enrollments/:studentId)     | `express delete request body example`           |
+| ⚠️ Debug error เช่น `req.body undefined`               | `express req.body undefined fix`                |
+| ⚠️ Debug error JWT                                     | `jsonwebtoken invalid signature express`        |
+| ⚠️ Debug error Zod                                     | `zod safeParse error example`                   |
 
 ---
 
@@ -1618,3 +1618,4 @@ export default router; // ส่ง router ไปเมาท์ใน index.ts
 ---
 
 อยากให้ผมทำ  (Lab15: Student/Course API, Lab16: Users/Enrollments/JWT) ให้เป็น 2 ตารางย่อยด้วยไหมครับ จะได้เปิดดูได้แม่นยำยิ่งขึ้น?
+

@@ -1,0 +1,38 @@
+[
+  {
+    "studentId": "650610001",
+    "firstName": "Matt",
+    "lastName": "Damon",
+    "program": "CPE",
+    "programId": 101
+  },
+  {
+    "studentId": "650610002",
+    "firstName": "Cillian",
+    "lastName": "Murphy",
+    "program": "CPE",
+    "programId": 101,
+    "courses": [
+      261207,
+      261497
+    ]
+  },
+  {
+    "studentId": "650610003",
+    "firstName": "Emily",
+    "lastName": "Blunt",
+    "program": "ISNE",
+    "programId": 102,
+    "courses": [
+      269101,
+      261497
+    ]
+  },
+  {
+    "studentId": "650615015",
+    "firstName": "Lisa",
+    "lastName": "Na baan yuan",
+    "program": "ISNE",
+    "programId": 102
+  }
+]
